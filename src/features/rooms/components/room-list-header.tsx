@@ -3,13 +3,15 @@
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { useLogout } from '@/features/auth/hooks/useLogout';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 
 export const RoomListHeader = () => {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useCurrentUser();
-  const { logout, isLoading: isLoggingOut } = useLogout();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
+  const { toast } = useToast();
 
   const handleLoginClick = () => {
     router.push('/login');
@@ -19,8 +21,16 @@ export const RoomListHeader = () => {
     router.push('/mypage');
   };
 
-  const handleLogoutClick = async () => {
-    await logout();
+  const handleLogoutClick = () => {
+    logout(undefined, {
+      onError: (error) => {
+        toast({
+          variant: 'destructive',
+          title: '로그아웃 실패',
+          description: error.message,
+        });
+      },
+    });
   };
 
   if (isLoading) {

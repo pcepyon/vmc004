@@ -1,38 +1,35 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { getSupabaseBrowserClient } from '@/lib/supabase/browser-client';
-import { useCurrentUser } from './useCurrentUser';
+import { apiClient, extractApiErrorMessage } from '@/lib/remote/api-client';
+import { useCurrentUserContext } from '../context/current-user-context';
+
+const logout = async () => {
+  try {
+    await apiClient.post('/api/auth/logout');
+  } catch (error) {
+    const message = extractApiErrorMessage(error, 'Failed to logout.');
+    throw new Error(message);
+  }
+};
 
 export const useLogout = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const router = useRouter();
-  const { refresh } = useCurrentUser();
+  const { refresh } = useCurrentUserContext();
 
-  const logout = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  return useMutation({
+    mutationFn: logout,
+    onSuccess: async () => {
+      // 모든 쿼리 캐시 초기화
+      queryClient.clear();
 
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const { error: signOutError } = await supabase.auth.signOut();
-
-      if (signOutError) {
-        throw new Error(signOutError.message);
-      }
-
+      // CurrentUser 컨텍스트 갱신
       await refresh();
-      router.refresh();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : '로그아웃에 실패했습니다.';
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [refresh, router]);
 
-  return { logout, isLoading, error };
+      // 로그인 페이지로 리다이렉트
+      router.push('/login');
+    },
+  });
 };

@@ -7,6 +7,8 @@ import { registerExampleRoutes } from '@/features/example/backend/route';
 import { registerRoomRoutes } from '@/features/rooms/backend/route';
 import { registerRoomRoutes as registerCreateRoomRoutes } from '@/features/room/backend/route';
 import { registerChatRoomRoutes } from '@/features/chat-room/backend/route';
+import { registerProfileRoutes } from '@/features/profile/backend/route';
+import { registerAuthRoutes } from '@/features/auth/backend/route';
 import type { AppEnv } from '@/backend/hono/context';
 
 let singletonApp: Hono<AppEnv> | null = null;
@@ -27,6 +29,8 @@ export const createHonoApp = () => {
   registerRoomRoutes(app);
   registerCreateRoomRoutes(app);
   registerChatRoomRoutes(app);
+  registerProfileRoutes(app);
+  registerAuthRoutes(app);
 
   singletonApp = app;
 
