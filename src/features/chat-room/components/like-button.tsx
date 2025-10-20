@@ -4,6 +4,7 @@ import { useChatRoomState } from '../hooks/use-chat-room-state';
 import { useChatRoomActions } from '../hooks/use-chat-room-actions';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import type { Message } from '../types/state';
 
 interface LikeButtonProps {
@@ -11,16 +12,27 @@ interface LikeButtonProps {
 }
 
 export function LikeButton({ message }: LikeButtonProps) {
-  const { loadingStates } = useChatRoomState();
+  const { authState, loadingStates } = useChatRoomState();
   const { toggleLike } = useChatRoomActions();
+  const router = useRouter();
 
   const isLoading = loadingStates.togglingLikeMessageId === message.id;
+
+  const handleLikeClick = () => {
+    if (!authState.isAuthenticated) {
+      if (confirm('로그인이 필요한 기능입니다. 로그인 페이지로 이동하시겠습니까?')) {
+        router.push('/login');
+      }
+      return;
+    }
+    toggleLike(message.id);
+  };
 
   return (
     <Button
       variant={message.is_liked_by_current_user ? 'default' : 'ghost'}
       size="sm"
-      onClick={() => toggleLike(message.id)}
+      onClick={handleLikeClick}
       disabled={isLoading}
       className="text-xs"
       aria-label={message.is_liked_by_current_user ? '좋아요 취소' : '좋아요'}
