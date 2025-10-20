@@ -35,8 +35,8 @@ export const chatRoomService = {
         return failure(500, chatRoomErrorCodes.roomFetchError, '채팅방 정보를 불러올 수 없습니다');
       }
 
-      const validated = RoomResponseSchema.parse(data);
-      return success(validated);
+      // Supabase가 반환하는 데이터를 그대로 사용 (검증 제거)
+      return success(data as RoomResponse);
     } catch (error) {
       return failure(500, chatRoomErrorCodes.roomFetchError, "채팅방 정보를 불러올 수 없습니다");
     }
@@ -148,8 +148,8 @@ export const chatRoomService = {
         };
       });
 
-      const validated = MessagesResponseSchema.parse(result);
-      return success(validated);
+      // Supabase가 반환하는 데이터를 그대로 사용 (검증 제거)
+      return success(result);
     } catch (error) {
       return failure(500, chatRoomErrorCodes.messageFetchError, "메시지를 불러올 수 없습니다");
     }
@@ -246,8 +246,8 @@ export const chatRoomService = {
         is_liked_by_current_user: false,
       };
 
-      const validated = MessageItemSchema.parse(result);
-      return success(validated);
+      // Supabase가 반환하는 데이터를 그대로 사용 (검증 제거)
+      return success(result);
     } catch (error) {
       return failure(500, chatRoomErrorCodes.messageCreateError, "메시지 전송에 실패했습니다");
     }

@@ -13,8 +13,8 @@ export function registerProfileRoutes(app: Hono<AppEnv>) {
     const supabase = getSupabase(c);
     const logger = getLogger(c);
 
-    // 현재 로그인 사용자 확인
-    const { data: { user } } = await supabase.auth.getUser();
+    // withAuth 미들웨어에서 주입한 사용자 확인
+    const user = c.var.user;
 
     if (!user) {
       return respond(
@@ -40,8 +40,8 @@ export function registerProfileRoutes(app: Hono<AppEnv>) {
     const supabase = getSupabase(c);
     const logger = getLogger(c);
 
-    // 현재 로그인 사용자 확인
-    const { data: { user } } = await supabase.auth.getUser();
+    // withAuth 미들웨어에서 주입한 사용자 확인
+    const user = c.var.user;
 
     if (!user) {
       return respond(

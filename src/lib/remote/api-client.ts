@@ -1,10 +1,23 @@
 import axios, { isAxiosError } from "axios";
+import { createClient } from "@/lib/supabase/client";
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "",
   headers: {
     "Content-Type": "application/json",
   },
+});
+
+// Supabase 세션의 access token을 모든 요청에 자동으로 추가
+apiClient.interceptors.request.use(async (config) => {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+  }
+
+  return config;
 });
 
 type ErrorPayload = {

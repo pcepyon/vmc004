@@ -77,46 +77,39 @@ export function ChatRoomProvider({ children, roomId }: ChatRoomProviderProps) {
     initialize();
   }, [roomId, loadMessages]);
 
-  // 폴링 시작/종료 관리 (useEffect 순서 상 startPolling/stopPolling 정의 후 호출)
+  // 폴링 시작/종료 관리
   useEffect(() => {
     let pollingTimer: ReturnType<typeof setInterval> | null = null;
 
-    const startPolling = () => {
-      if (state.pollingState.isPolling) return;
+    // 폴링 시작 (state dependency 제거하여 무한 루프 방지)
+    dispatch({ type: ChatRoomActionTypes.START_POLLING });
 
-      dispatch({ type: ChatRoomActionTypes.START_POLLING });
+    // 4초 간격으로 폴링 (고정값 사용)
+    pollingTimer = setInterval(async () => {
+      try {
+        const { data } = await chatRoomApi.getMessages(roomId);
+        dispatch({
+          type: ChatRoomActionTypes.POLLING_UPDATE,
+          payload: data,
+        });
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 4000);
 
-      pollingTimer = setInterval(async () => {
-        try {
-          const { data } = await chatRoomApi.getMessages(roomId);
-          dispatch({
-            type: ChatRoomActionTypes.POLLING_UPDATE,
-            payload: data,
-          });
-        } catch (error) {
-          console.error('Polling error:', error);
-        }
-      }, state.pollingState.pollInterval);
+    dispatch({
+      type: ChatRoomActionTypes.SET_TIMER_ID,
+      payload: pollingTimer,
+    });
 
-      dispatch({
-        type: ChatRoomActionTypes.SET_TIMER_ID,
-        payload: pollingTimer,
-      });
-    };
-
-    const stopPolling = () => {
+    // Cleanup: 컴포넌트 언마운트 시 폴링 중지
+    return () => {
       if (pollingTimer) {
         clearInterval(pollingTimer);
       }
       dispatch({ type: ChatRoomActionTypes.STOP_POLLING });
     };
-
-    startPolling();
-
-    return () => {
-      stopPolling();
-    };
-  }, [roomId, state.pollingState.pollInterval, state.pollingState.isPolling]);
+  }, [roomId]); // roomId만 dependency로 설정
 
   // 메시지 전송
   const sendMessage = useCallback(
@@ -146,23 +139,27 @@ export function ChatRoomProvider({ children, roomId }: ChatRoomProviderProps) {
 
   // 메시지 삭제
   const deleteMessage = useCallback(async (messageId: string) => {
-    const messageToDelete = state.messages.find((m) => m.id === messageId);
-    if (!messageToDelete) return;
-
+    // 삭제 시작 (로딩 상태만 설정, Optimistic update 제거)
     dispatch({
       type: ChatRoomActionTypes.DELETE_MESSAGE_START,
       payload: messageId,
     });
     try {
       await chatRoomApi.deleteMessage(messageId);
-      dispatch({ type: ChatRoomActionTypes.DELETE_MESSAGE_SUCCESS });
+      // 성공 시 로딩 상태만 초기화
+      dispatch({
+        type: ChatRoomActionTypes.DELETE_MESSAGE_SUCCESS,
+      });
+      // 목록 재조회
+      await loadMessages();
     } catch (error) {
+      // 실패 시 에러 처리 (payload는 사용하지 않음)
       dispatch({
         type: ChatRoomActionTypes.DELETE_MESSAGE_FAILURE,
-        payload: { messageId, message: messageToDelete },
+        payload: { messageId, message: {} as any },
       });
     }
-  }, [state.messages]);
+  }, [loadMessages]); // loadMessages는 useCallback으로 안정적이므로 dependency 안전
 
   // 좋아요 토글
   const toggleLike = useCallback(async (messageId: string) => {

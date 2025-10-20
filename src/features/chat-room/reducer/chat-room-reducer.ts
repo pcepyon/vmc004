@@ -138,11 +138,9 @@ export function chatRoomReducer(state: ChatRoomState, action: ChatRoomAction): C
       };
 
     case ChatRoomActionTypes.DELETE_MESSAGE_START: {
-      // Optimistic Update: 메시지 즉시 제거
-      const filtered = state.messages.filter((m) => m.id !== action.payload);
+      // 로딩 상태만 설정 (Optimistic Update 제거)
       return {
         ...state,
-        messages: filtered,
         loadingStates: {
           ...state.loadingStates,
           deletingMessageId: action.payload,
@@ -151,6 +149,7 @@ export function chatRoomReducer(state: ChatRoomState, action: ChatRoomAction): C
     }
 
     case ChatRoomActionTypes.DELETE_MESSAGE_SUCCESS:
+      // 성공 시 메시지 제거 (실제로는 loadMessages 재호출로 처리됨)
       return {
         ...state,
         loadingStates: {
@@ -164,13 +163,9 @@ export function chatRoomReducer(state: ChatRoomState, action: ChatRoomAction): C
       };
 
     case ChatRoomActionTypes.DELETE_MESSAGE_FAILURE: {
-      // Rollback: 메시지 다시 추가
-      const { messageId, message } = action.payload;
-      const messages = [...state.messages];
-      messages.splice(state.messages.findIndex((m) => m.id > messageId), 0, message);
+      // 실패 시 로딩 상태만 초기화
       return {
         ...state,
-        messages,
         loadingStates: {
           ...state.loadingStates,
           deletingMessageId: null,
